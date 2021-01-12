@@ -19,3 +19,7 @@ shotChartProject/shotChartImages/
 *.jpg
 *.jpeg
 *.pdf
+
+# Constants / Secrets
+constants.py
+secrets.py

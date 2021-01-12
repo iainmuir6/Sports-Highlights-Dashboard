@@ -16,6 +16,8 @@ import requests
 # import time
 
 # Other
+from constants import LEAGUE_ID
+from secrets import SWID, ESPN_S2
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -41,12 +43,25 @@ def get_nfl_week():
 
     :return Current week in the NFL
     """
-    url = "https://en.wikipedia.org/wiki/" + str(date.year) + "_NFL_season"
-    page = requests.get(url)
-    soup = BeautifulSoup(page.content, "html.parser")
-    duration = soup.find("table", class_='infobox vevent').tbody.find("td").text
-    start = duration[duration.find("(") + 1: duration.find(")")]
-    return 1 + ((date - datetime.strptime(start, "%Y-%m-%d")).days // 7)
+
+    # TODO Adjust for playoffs
+
+    # url = "https://en.wikipedia.org/wiki/" + str(date.year) + "_NFL_season"
+    # page = requests.get(url)
+    # soup = BeautifulSoup(page.content, "html.parser")
+    # duration = soup.find("table", class_='infobox vevent').tbody.find("td").text
+    # start = duration[duration.find("(") + 1: duration.find(")")]
+    # return 1 + ((date - datetime.strptime(start, "%Y-%m-%d")).days // 7)
+
+    url = "https://fantasy.espn.com/apis/v3/games/ffl/seasons/" + str(date.year) + "/segments/0/leagues/" + \
+          str(LEAGUE_ID)
+    response1 = requests.get(url,
+                             cookies={
+                                 "SWID": SWID,
+                                 "espn_s2": ESPN_S2
+                             }).json()
+
+    print(response1['scoringPeriodId'])
 
 
 @st.cache(suppress_st_warning=True)
@@ -61,6 +76,7 @@ def loop_data(rows, today_date):
 
     :return no return value
     """
+
     global highlights
 
     if rows[0] != '7/21/2020 11:08:49' and rows[1] != "iam9ez@virginia.edu":
@@ -288,6 +304,8 @@ response = pd.DataFrame(
 )
 
 date = datetime.today() - timedelta(days=1)
+print(get_nfl_week())
+exit(0)
 d, h = loop_data(response.values[0], date)
 
 if d is not None:
