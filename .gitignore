@@ -1,18 +1,10 @@
 # theScore Directory
-theScore/Archived/
-theScore/Archived/**
-theScore/Archived Output/
-theScore/Archived Output/**
-theScore/gmailAPI/
-theScore/gmailAPI/**
-theScore/Sheets API/
-theScore/Sheets API/**
-theScore/Input
-theScore/Output
-
+theScore/
+theScore/**
 
 # shotChartProject Directory
-shotChartProject/shotChartImages/
+shotChartProject/
+shotChartProject/**
 
 # Any Images (Output Files)
 *.png
