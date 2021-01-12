@@ -53,15 +53,19 @@ def get_nfl_week():
     # start = duration[duration.find("(") + 1: duration.find(")")]
     # return 1 + ((date - datetime.strptime(start, "%Y-%m-%d")).days // 7)
 
-    url = "https://fantasy.espn.com/apis/v3/games/ffl/seasons/" + str(date.year) + "/segments/0/leagues/" + \
-          str(LEAGUE_ID)
-    response1 = requests.get(url,
-                             cookies={
-                                 "SWID": SWID,
-                                 "espn_s2": ESPN_S2
-                             }).json()
+    year = date.year
+    if date.month < 3:
+        year -= 1
 
-    print(response1['scoringPeriodId'])
+    try:
+        return requests.get(url="https://fantasy.espn.com/apis/v3/games/ffl/seasons/" + str(year) +
+                                "/segments/0/leagues/" + str(LEAGUE_ID),
+                            cookies={
+                                "SWID": SWID,
+                                "espn_s2": ESPN_S2
+                            }).json()['scoringPeriodId']
+    except KeyError:
+        return -1
 
 
 @st.cache(suppress_st_warning=True)
@@ -304,8 +308,6 @@ response = pd.DataFrame(
 )
 
 date = datetime.today() - timedelta(days=1)
-print(get_nfl_week())
-exit(0)
 d, h = loop_data(response.values[0], date)
 
 if d is not None:
