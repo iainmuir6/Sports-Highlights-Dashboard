@@ -7,6 +7,13 @@ STRUCTURE:
     Loop of inputs (no loop for personal use)
         Loop of leagues
             Loop of games
+
+TODO
+    • Generate Data Source Once
+    • Ability to get highlights from any date
+    • Unfiltered Highlights
+    •
+
 """
 
 # Modules for scraping
@@ -16,6 +23,7 @@ import requests
 # import time
 
 # Other
+from constants import INDICES, LOGOS, CODES, RESPONSE
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -39,10 +47,10 @@ def get_nfl_week():
     """
     Scrapes the duration of the current NFL regular season from Wikipedia in order to calculate the current week
 
+    TODO Adjust for playoffs
+
     :return Current week in the NFL
     """
-
-    # TODO Adjust for playoffs
 
     url = "https://en.wikipedia.org/wiki/" + str(year) + "_NFL_season"
     page = requests.get(url)
@@ -69,17 +77,12 @@ def loop_data(rows, today_date):
 
     global highlights
 
+    print(today_date)
     if rows[0] != '7/21/2020 11:08:49' and rows[1] != "iam9ez@virginia.edu":
         return None, None
 
-    st.markdown("<center><img src='https://i.postimg.cc/WbYzfHvd/morningscoop.jpg' alt='Image' width='200'></center>",
-                unsafe_allow_html=True)
-    st.markdown("<h1 style='text-align: center;'>Morning Scoop</h1>", unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align: center;'> Highlights from: " +
-                today_date.date().strftime('%B %d, %Y') + "</h1>", unsafe_allow_html=True)
-
     leagues = np.array(rows[2].split(","))
-    indices_arr = np.array(list(map(lambda x: indices[x.strip()], leagues)))
+    indices_arr = np.array(list(map(lambda x: INDICES[x.strip()], leagues)))
     teams = np.array(list(map(lambda x: rows[x].split(","), indices_arr)))
 
     highlights = {}
@@ -114,7 +117,7 @@ def loop_leagues(league, teams_list):
     """
     global highlights
 
-    sport_shortened = codes[league]
+    sport_shortened = CODES[league]
     url = "https://www.thescore.com/" + sport_shortened + "/events/" + \
           ("conference/All%20Conferences/date/" + str(date.date()) if sport_shortened == 'ncaab' else
            "date/" + str(year) + "-" + str(get_nfl_week()) if sport_shortened == 'nfl' else
@@ -193,7 +196,7 @@ def display(data, highlights):
     no_highlights = "<center> "
     for sport, any_ in highlights.items():
         if not any_:
-            no_highlights += '<img src="' + logos[codes[sport]] + '" width="40"/>                               '
+            no_highlights += '<img src="' + LOGOS[CODES[sport]] + '" width="40"/>                               '
         else:
             st.markdown("<h3 style='text-align: center;'> " + sport + "</h1>",
                         unsafe_allow_html=True)
@@ -220,86 +223,30 @@ def display(data, highlights):
     st.markdown(no_highlights + "</center>", unsafe_allow_html=True)
 
 
-indices = {"NBA": 3,
-           "MLB": 4,
-           "NHL": 5,
-           "Men's College Basketball": 7,
-           "Premier League": 8,
-           "MLS": 9,
-           "La Liga": 10,
-           "Bundesliga": 11,
-           "Ligue 1": 12,
-           "Serie A": 13,
-           "Champions League": 14,
-           "Europa League": 15,
-           "NFL": 16
-           }
-logos = {"nba": "https://upload.wikimedia.org/wikipedia/en/0/03/National_Basketball_Association_logo.svg",
-         "nfl": "https://upload.wikimedia.org/wikipedia/en/a/a2/National_Football_League_logo.svg",
-         "mlb": "https://upload.wikimedia.org/wikipedia/en/a/a6/Major_League_Baseball_logo.svg",
-         "nhl": "https://upload.wikimedia.org/wikipedia/en/3/3a/05_NHL_Shield.svg",
-         "ncaab": "https://upload.wikimedia.org/wikipedia/commons/d/dd/NCAA_logo.svg",
-         "epl": "https://upload.wikimedia.org/wikipedia/en/f/f2/Premier_League_Logo.svg",
-         "mls": "https://upload.wikimedia.org/wikipedia/commons/7/76/MLS_crest_logo_RGB_gradient.svg",
-         "liga": "https://upload.wikimedia.org/wikipedia/commons/1/13/LaLiga.svg",
-         "bund": "https://upload.wikimedia.org/wikipedia/en/d/df/Bundesliga_logo_%282017%29.svg",
-         "fran": "https://upload.wikimedia.org/wikipedia/en/b/ba/Ligue_1_Uber_Eats.svg",
-         "seri": "https://upload.wikimedia.org/wikipedia/en/e/e1/Serie_A_logo_%282019%29.svg",
-         "chlg": "https://upload.wikimedia.org/wikipedia/en/b/bf/UEFA_Champions_League_logo_2.svg",
-         "uefa": "https://upload.wikimedia.org/wikipedia/en/0/03/Europa_League.svg"}
-codes = {"NBA": "nba",
-         "NFL": "nfl",
-         "MLB": "mlb",
-         "NHL": "nhl",
-         "Men's College Basketball": "ncaab",
-         "Premier League": "epl",
-         "MLS": "mls",
-         "La Liga": "liga",
-         "Bundesliga": "bund",
-         "Ligue 1": "fran",
-         "Serie A": "seri",
-         "Champions League": "chlg",
-         "Europa League": "uefa",
-         }
-response = pd.DataFrame(
-    {'Timestamp': '7/21/2020 11:08:49',
-     'Email Address': 'iam9ez@virginia.edu',
-     'Sports League you would like to receive highlights from:': "NBA, NFL, MLB, NHL, Men's College Basketball,"
-                                                                 " Premier League, MLS, La Liga, Bundesliga,"
-                                                                 " Ligue 1, Serie A, Champions League, Europa League",
-     'NBA Teams': 'BOS Celtics, BKN Nets, DAL Mavericks, DEN Nuggets, HOU Rockets, LA Clippers, LA Lakers,'
-                  ' MEM Grizzlies, MIA Heat, MIL Bucks, NO Pelicans, PHI 76ers, TOR Raptors, WAS Wizards',
-     'MLB Teams': 'BOS Red Sox, CHI Cubs, CLE Indians, COL Rockies, LA Angels, LA Dodgers, MIN Twins, NY Yankees,'
-                  ' SF Giants, STL Cardinals, TB Rays, WSH Nationals',
-     'NHL Teams': 'BOS Bruins, CHI Blackhawks, NY Rangers, PHI Flyers, PIT Penguins, SJ Sharks,'
-                  ' TB Lightning, VGS Golden Knights, WAS Capitals',
-     'Would you like condensed or full highlights?': 'Condensed',
-     'NCAA Basketball Teams': 'Virginia, Duke, Notre Dame, Virginia Tech, North Carolina, Texas, Maryland,'
-                              ' Ohio State, Michigan, Indiana, Arizona, Stanford, Kentucky, Florida, Georgia',
-     'EPL Teams': 'Arsenal, Chelsea, Everton, Leicester City, Liverpool, Manchester City,'
-                  ' Manchester United, Tottenham Hotspur',
-     'MLS Teams': 'Atlanta, Chicago, D.C. United, LA Galaxy, LAFC, Minnesota,'
-                  ' NYCFC, NY Red Bulls, Seattle',
-     'La Liga Teams': 'Atlético Madrid, Barcelona, Real Madrid, Sevilla, Valencia',
-     'Bundesliga Teams': 'Bayer Leverkusen, Bayern Munich, Dortmund, RB Leipzig, Werder Bremen',
-     'Ligue 1 Teams': 'Lyon, Marseille, Montpellier, Nice, PSG, Saint-Etienne, Stade Rennes',
-     'Serie A Teams': 'Fiorentina, Internazionale, Juventus, Lazio, Milan, Napoli, Roma',
-     'Champions League Teams': 'Barcelona, Real Madrid, PSG, Juventus, Napoli, Roma, Bayern Munich,'
-                               ' Dortmund, RB Leipzig, Liverpool, Manchester City, Manchester United',
-     'Europa League Teams': 'Barcelona, Real Madrid, PSG, Juventus, Napoli, Roma, Bayern Munich, ' 
-                            'Dortmund, RB Leipzig, Liverpool, Manchester City, Manchester United',
-     'NFL Teams': 'ATL Falcons, BAL Ravens, CAR Panthers, CHI Bears, CLE Browns, DAL Cowboys, GB Packers, KC Chiefs,'
-                  ' LA Rams, MIN Vikings, NE Patriots, NO Saints, SF 49ers, SEA Seahawks, WSH Football Team'
-     }, index=[0]
-)
+def run():
+    """
 
-date = datetime.today() - timedelta(days=1)
-year = date.year if date.month > 3 else date.year - 1
+    TODO Better Method for Determining Year
+    """
+    global date, year
 
-d, h = loop_data(response.values[0], date)
+    date = datetime.today() - timedelta(days=1)
+    year = date.year if date.month > 3 else date.year - 1
 
-if d is not None:
-    display(d.dropna().set_index('league'), h)
-else:
-    print('Data passed incorrectly')
-    exit(code=0)
+    st.markdown("<center><img src='https://i.postimg.cc/WbYzfHvd/morningscoop.jpg' alt='Image' width='200'></center>",
+                unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center;'>Morning Scoop</h1>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center;'> Highlights from: " +
+                date.date().strftime('%B %d, %Y') + "</h1>", unsafe_allow_html=True)
+
+    d, h = loop_data(RESPONSE.values[0], date)
+
+    if d is not None:
+        display(d.dropna().set_index('league'), h)
+    else:
+        print('Data passed incorrectly')
+        exit(code=0)
+
+
+if __name__ == '__main__':
+    run()
