@@ -14,8 +14,6 @@ def get_nfl_week():
     """
     Scrapes the duration of the current NFL regular season from Wikipedia in order to calculate the current week
 
-    TODO Adjust for playoffs
-
     :return Current week in the NFL
     """
 
@@ -78,6 +76,48 @@ def get_schedule():
     df.to_csv('schedule_' + str(date.date()) + '.csv')
 
 
+def reformat(s):
+    index = 0
+    for i, let in enumerate(s):
+        if let.istitle():
+            index = i
+            break
+    return s[index:]
+
+
+def get_teams():
+    """
+
+    """
+
+    data = []
+
+    for league_ in list(CODES.values()):
+        url = 'https://www.thescore.com/' + league_ + '/standings' + \
+              ('/american-league' if league_ == 'mlb' else '/afc' if league_ == 'nfl' else
+               '/AP%20Top%2025' if league_ == 'ncaab' else '')
+        page = requests.get(url=url)
+        soup = BeautifulSoup(page.content, 'html.parser')
+        print(league_)
+        table = soup.find_all('div', class_='standings')[0]
+        all_teams = [[league_, reformat(a.div.div.text), a['href'][a['href'].rfind('/') + 1:],
+                      'https://www.thescore.com' + a['href']] for a in table.find_all('a')]
+        data += all_teams
+
+        if league_ == 'mlb' or league_ == 'nfl':
+            url = 'https://www.thescore.com/' + league_ + '/standings' + (
+                '/national-league' if league_ == 'mlb' else '/nfc' if league_ == 'nfl' else '')
+            page = requests.get(url=url)
+            soup = BeautifulSoup(page.content, 'html.parser')
+            table = soup.find_all('div', class_='standings')[0]
+            all_teams = [[league_, reformat(a.div.div.text), a['href'][a['href'].rfind('/') + 1:],
+                          'https://www.thescore.com' + a['href']] for a in table.find_all('a')]
+            data += all_teams
+
+    df = pd.DataFrame(data, columns=['league', 'team', 'id', 'link'])
+    df.to_csv('teams.csv')
+
+
 def display(games):
     """
     :argument
@@ -90,10 +130,10 @@ def display(games):
         col = col1 if i % 2 == 0 else col2
 
         col.markdown("<p style='font-size:16px;text-align:left;'> <img src='" + g[8] + "' height='60' />" +
-                     "<b>" + g[2] + "</b> " + g[3] + " <span style='float:right;'><a href='" + g[7] + "'>" + g[6] +
+                     "<b>" + g[2] + "</b> " + str(g[3]) + " <span style='float:right;'><a href='" + g[7] + "'>" + g[6] +
                      "</a></span></p>", unsafe_allow_html=True)
         col.markdown("<p style='font-size:16px;text-align:left;'> <img src='" + g[9] +
-                     "' height='60' /> <b>" + g[5] + "</b> " + g[4] + "</p>",
+                     "' height='60' /> <b>" + g[5] + "</b> " + str(g[4]) + "</p>",
                      unsafe_allow_html=True)
         col.write('------------------------------')
 
@@ -101,7 +141,7 @@ def display(games):
 def run():
     """
 
-    # TODO Scrape all teams --> DataFrame
+
     """
     global date, year
 
@@ -120,26 +160,30 @@ def run():
     if not os.path.exists('schedule_' + str(date.date()) + '.csv'):
         st.warning("Gathering Data for Today's Games...")
         get_schedule()
-
-    df = pd.read_csv('schedule_' + str(date.date()) + '.csv')
+    schedule_df = pd.read_csv('schedule_' + str(date.date()) + '.csv')
+    if not os.path.exists('teams.csv'):
+        st.warning("Gathering Data for Today's Games...")
+        get_teams()
+        exit(0)
+    teams_df = pd.read_csv('teams.csv')
 
     if league != '--- Select a League ---':
         st.markdown("<h3 style='text-align: center;'>Schedule for the " + league + "</h3>", unsafe_allow_html=True)
         st.write('------------------------------')
 
-        games = df.query('league == "' + CODES[league] + '"')
+        games = schedule_df.query('league == "' + CODES[league] + '"')
         display(games)
 
-    st.write('------------------------------')
-    team = st.selectbox('Choose a Team', ['--- Select a Team ---'] + list(CODES.keys()),
-                        index=0)
-    if team != '--- Select a Team ---':
-        st.write(team)
+        team = st.selectbox('Choose a Team', ['--- Select a Team ---'] +
+                            list(teams_df.query('league == "' + CODES[league] + '"')['team']),
+                            index=0)
+
+        if team != '--- Select a Team ---':
+            st.write(team)
 
 
 if __name__ == '__main__':
-    # run()
     date = datetime.today()
     year = date.year if date.month > 3 else date.year - 1
 
-    print(get_nfl_week())
+    run()

@@ -10,7 +10,6 @@ STRUCTURE:
 
 TODO
     • Generate Data Source Once
-    • Ability to get highlights from any date
     • Unfiltered Highlights
     •
 
@@ -238,6 +237,14 @@ def run():
     st.markdown("<h1 style='text-align: center;'>Morning Scoop</h1>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center;'> Highlights from: " +
                 date.date().strftime('%B %d, %Y') + "</h1>", unsafe_allow_html=True)
+
+    col1, col2 = st.beta_columns(2)
+    custom = col1.checkbox('Enter Custom Date')
+    if custom:
+        input_ = col2.date_input("Enter Date:",
+                                 min_value=datetime.today() - timedelta(days=365),
+                                 max_value=datetime.today() - timedelta(days=1))
+        date = datetime.combine(input_, datetime.min.time())
 
     d, h = loop_data(RESPONSE.values[0], date)
 
