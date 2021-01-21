@@ -13,6 +13,8 @@ import highlights
 import schedule
 import analytics
 
+# st.set_page_config(layout="wide")
+
 PAGES = {
     "Home": home,
     "Highlights": highlights,
