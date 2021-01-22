@@ -76,7 +76,6 @@ def loop_data(rows, today_date):
 
     global highlights
 
-    print(today_date)
     if rows[0] != '7/21/2020 11:08:49' and rows[1] != "iam9ez@virginia.edu":
         return None, None
 

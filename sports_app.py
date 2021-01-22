@@ -3,7 +3,7 @@ Iain Muir, iam9ez
 
 PROJECT DESCRIPTION
 
-streamlit run /Users/iainmuir/PycharmProjects/Desktop/sportsHighlights/app.py
+streamlit run /Users/iainmuir/PycharmProjects/Desktop/sportsHighlights/fantasy_app.py
 """
 
 import streamlit as st
@@ -25,7 +25,7 @@ def launch():
         "Analytics": analytics,
     }
 
-    st.sidebar.title("Navigation")
+    st.sidebar.title("Sports Navigation")
     selection = st.sidebar.radio("Go to", list(pages.keys()))
     page = pages[selection]
     page.run()
