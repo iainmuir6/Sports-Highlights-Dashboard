@@ -12,8 +12,5 @@ shotChartProject/**
 *.jpeg
 *.pdf
 
-# Constants / Secrets
-secrets.py
-
 # Data
 *.csv

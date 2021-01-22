@@ -1,9 +1,9 @@
 # Iain Muir
 # iam9ez
 
+from constants import CODES, LOGO_CODES
 from datetime import datetime
 from bs4 import BeautifulSoup
-from constants import CODES
 import streamlit as st
 import pandas as pd
 import requests
@@ -73,7 +73,7 @@ def get_schedule():
         'league', 'team1', 'line1', 'line2', 'team2', 'time', 'link', 'logo1', 'logo2'
     ])
 
-    df.to_csv('schedule_' + str(date.date()) + '.csv')
+    df.to_csv('sportsHighlights/schedule_' + str(date.date()) + '.csv')
 
 
 def reformat(s):
@@ -98,10 +98,11 @@ def get_teams():
                '/AP%20Top%2025' if league_ == 'ncaab' else '')
         page = requests.get(url=url)
         soup = BeautifulSoup(page.content, 'html.parser')
-        print(league_)
         table = soup.find_all('div', class_='standings')[0]
         all_teams = [[league_, reformat(a.div.div.text), a['href'][a['href'].rfind('/') + 1:],
-                      'https://www.thescore.com' + a['href']] for a in table.find_all('a')]
+                      'https://www.thescore.com' + a['href'], 'https://assets-sports.thescore.com/' +
+                      LOGO_CODES[league_] + '/team/' + a['href'][a['href'].rfind('/') + 1:] + '/small_logo.png']
+                     for a in table.find_all('a')]
         data += all_teams
 
         if league_ == 'mlb' or league_ == 'nfl':
@@ -111,11 +112,13 @@ def get_teams():
             soup = BeautifulSoup(page.content, 'html.parser')
             table = soup.find_all('div', class_='standings')[0]
             all_teams = [[league_, reformat(a.div.div.text), a['href'][a['href'].rfind('/') + 1:],
-                          'https://www.thescore.com' + a['href']] for a in table.find_all('a')]
+                          'https://www.thescore.com' + a['href'], 'https://assets-sports.thescore.com/' +
+                          LOGO_CODES[league_] + '/team/' + a['href'][a['href'].rfind('/') + 1:] + '/small_logo.png']
+                         for a in table.find_all('a')]
             data += all_teams
 
-    df = pd.DataFrame(data, columns=['league', 'team', 'id', 'link'])
-    df.to_csv('teams.csv')
+    df = pd.DataFrame(data, columns=['league', 'team', 'id', 'link', 'logo'])
+    df.to_csv('sportsHighlights/teams.csv')
 
 
 def display(games):
@@ -157,15 +160,19 @@ def run():
     league = st.selectbox('Choose the League', ['--- Select a League ---'] + list(CODES.keys()),
                           index=0)
 
-    if not os.path.exists('schedule_' + str(date.date()) + '.csv'):
+    if not os.path.exists('sportsHighlights/schedule_' + str(date.date()) + '.csv'):
         st.warning("Gathering Data for Today's Games...")
         get_schedule()
-    schedule_df = pd.read_csv('schedule_' + str(date.date()) + '.csv')
-    if not os.path.exists('teams.csv'):
-        st.warning("Gathering Data for Today's Games...")
+    schedule_df = pd.read_csv('sportsHighlights/schedule_' + str(date.date()) + '.csv')
+
+    files = os.listdir(os.getcwd() + '/sportsHighlights/')
+    for f in files:
+        if f.endswith('.csv') and f.startswith('schedule') and str(date.date()) not in f:
+            os.remove('sportsHighlights/' + f)
+
+    if not os.path.exists('sportsHighlights/teams.csv'):
         get_teams()
-        exit(0)
-    teams_df = pd.read_csv('teams.csv')
+    teams_df = pd.read_csv('sportsHighlights/teams.csv')
 
     if league != '--- Select a League ---':
         st.markdown("<h3 style='text-align: center;'>Schedule for the " + league + "</h3>", unsafe_allow_html=True)
@@ -179,7 +186,19 @@ def run():
                             index=0)
 
         if team != '--- Select a Team ---':
-            st.write(team)
+            url = list(teams_df.query('team == "' + team + '"')['link'])[0] + '/schedule'
+            page = requests.get(url=url)
+            soup = BeautifulSoup(page.content, 'html.parser')
+            games = soup.find_all('div', 'TeamSchedule__scheduleRow--31aZJ row')
+            next_five = list(filter(lambda g: ':' in g.text, games))[:5]
+            for game in next_five:
+                text = ' '.join([g.text for g in game.find_all('div')])
+                opponent = text.split()[3]
+
+                # logo = list(teams_df.query('league == "' + CODES[league] +
+                #                            '" && team LIKE "%' + opponent + '%"')['logo'])[0]
+
+                st.markdown('<center><p>' + text + '</p></center>', unsafe_allow_html=True)
 
 
 if __name__ == '__main__':
