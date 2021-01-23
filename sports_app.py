@@ -9,9 +9,9 @@ streamlit run /Users/iainmuir/PycharmProjects/Desktop/sportsHighlights/fantasy_a
 import streamlit as st
 
 try:
-    from sportsHighlights import home, highlights, schedule, analytics
+    from sportsHighlights import sports_home, highlights, schedule, analytics
 except ModuleNotFoundError:
-    import home
+    import sports_home
     import highlights
     import schedule
     import analytics
@@ -19,7 +19,7 @@ except ModuleNotFoundError:
 
 def launch():
     pages = {
-        "Home": home,
+        "Home": sports_home,
         "Highlights": highlights,
         "Schedule": schedule,
         "Analytics": analytics,
