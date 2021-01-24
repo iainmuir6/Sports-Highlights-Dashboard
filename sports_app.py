@@ -3,7 +3,7 @@ Iain Muir, iam9ez
 
 PROJECT DESCRIPTION
 
-streamlit run /Users/iainmuir/PycharmProjects/Desktop/sportsHighlights/fantasy_app.py
+streamlit run /Users/iainmuir/PycharmProjects/Desktop/streamlitApp/sportsHighlights/sports_app.py
 """
 
 import streamlit as st

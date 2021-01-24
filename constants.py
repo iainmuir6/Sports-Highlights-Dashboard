@@ -55,6 +55,22 @@ CODES = {
     "Europa League": "uefa"
 }
 
+LOGO_CODES = {
+    "nba": "basketball",
+    "nfl": "football",
+    "mlb": "baseball",
+    "nhl": "hockey",
+    "ncaab": "basketball",
+    "epl": "soccer",
+    "mls": "soccer",
+    "liga": "soccer",
+    "bund": "soccer",
+    "fran": "soccer",
+    "seri": "soccer",
+    "chlg": "soccer",
+    "uefa": "soccer"
+}
+
 RESPONSE = pd.DataFrame(
     {'Timestamp': '7/21/2020 11:08:49',
      'Email Address': 'iam9ez@virginia.edu',
