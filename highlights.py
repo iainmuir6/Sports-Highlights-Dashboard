@@ -10,8 +10,9 @@ STRUCTURE:
 
 TODO
     • Generate Data Source Once
+        • Highlights and YouTube
     • Unfiltered Highlights
-    •
+    • Asynchronous
 
 """
 
@@ -69,8 +70,7 @@ def get_nfl_week():
     return 1 + ((date - start).days // 7) if date < end else 17 + ((date - end).days // 7)
 
 
-@st.cache(suppress_st_warning=True)
-def loop_data(rows, today_date):
+def loop_data(rows):
     """
     :argument rows – DataFrame of favorite sports teams/leagues
     :argument today_date
@@ -200,6 +200,7 @@ def display(data, highlights):
     """
 
     youtube_df = pd.DataFrame(youtube_data(), columns=['tm1', 'tm2', 'date', 'img', 'link'])
+
     no_highlights = "<center> "
     for sport, any_ in highlights.items():
         if not any_:
@@ -214,7 +215,10 @@ def display(data, highlights):
                 counter += 1
                 col = col1 if counter % 2 != 0 else col2
                 tm1, score1, score2, tm2, link, logo1, logo2 = g
-                lst = [tm1, tm2]
+                try:
+                    lst = [tm1.split()[1].title(), tm2.split()[1].title()]
+                except IndexError:
+                    lst = []
 
                 font_size = '14'
                 if "T:" in score1 or "-" in score2:
@@ -227,8 +231,11 @@ def display(data, highlights):
                              + score2 + " <b>" + tm2 + "</b> <img src='" + logo2 + "' height='40' /> </p>",
                              unsafe_allow_html=True)
                 if sport == 'NBA':
-                    link = list(youtube_df.query('tm1 in @lst')['link'])[0]
-                    col.video(link)
+                    try:
+                        link = list(youtube_df.query('tm1 in @lst')['link'])[0]
+                        col.video(link)
+                    except IndexError:
+                        continue
 
     st.subheader("No highlights:")
     st.markdown(no_highlights + "</center>", unsafe_allow_html=True)
@@ -240,7 +247,7 @@ def build_client():
     api_key = 'AIzaSyDRywzvTHTBs4j6cSOMFo0uWr9zn7W7bh4'
     api_service_name = "youtube"
     api_version = "v3"
-    client_secrets_file = "client_secrets.json"
+    client_secrets_file = "/Users/iainmuir/PycharmProjects/Desktop/streamlitApp/sportsHighlights/client_secrets.json"
     scopes = ["https://www.googleapis.com/auth/youtube.readonly"]
     credentials = None
 
@@ -326,7 +333,7 @@ def run():
                                  max_value=datetime.today() - timedelta(days=1))
         date = datetime.combine(input_, datetime.min.time())
 
-    d, h = loop_data(RESPONSE.values[0], date)
+    d, h = loop_data(RESPONSE.values[0])
 
     if d is not None:
         display(d.dropna().set_index('league'), h)
