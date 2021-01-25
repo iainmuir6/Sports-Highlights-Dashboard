@@ -28,6 +28,14 @@ import pandas as pd
 import numpy as np
 import sys
 
+# YouTube API
+from google.auth.transport.requests import Request
+import google_auth_oauthlib.flow
+import googleapiclient.discovery
+import googleapiclient.errors
+import pickle
+import os
+
 
 def print_exception():
     """
@@ -191,6 +199,7 @@ def display(data, highlights):
     :argument highlights
     """
 
+    youtube_df = pd.DataFrame(youtube_data(), columns=['tm1', 'tm2', 'date', 'img', 'link'])
     no_highlights = "<center> "
     for sport, any_ in highlights.items():
         if not any_:
@@ -205,6 +214,7 @@ def display(data, highlights):
                 counter += 1
                 col = col1 if counter % 2 != 0 else col2
                 tm1, score1, score2, tm2, link, logo1, logo2 = g
+                lst = [tm1, tm2]
 
                 font_size = '14'
                 if "T:" in score1 or "-" in score2:
@@ -216,9 +226,80 @@ def display(data, highlights):
                              "' height='40' /> <b>" + tm1 + "</b> " + score1 + " <a href='" + link + "'> -</a> "
                              + score2 + " <b>" + tm2 + "</b> <img src='" + logo2 + "' height='40' /> </p>",
                              unsafe_allow_html=True)
+                if sport == 'NBA':
+                    link = list(youtube_df.query('tm1 in @lst')['link'])[0]
+                    col.video(link)
 
     st.subheader("No highlights:")
     st.markdown(no_highlights + "</center>", unsafe_allow_html=True)
+
+
+def build_client():
+    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+
+    api_key = 'AIzaSyDRywzvTHTBs4j6cSOMFo0uWr9zn7W7bh4'
+    api_service_name = "youtube"
+    api_version = "v3"
+    client_secrets_file = "client_secrets.json"
+    scopes = ["https://www.googleapis.com/auth/youtube.readonly"]
+    credentials = None
+
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
+            credentials = pickle.load(token)
+    # If there are no (valid) credentials available, let the user log in.
+    if not credentials or not credentials.valid:
+        if credentials and credentials.expired and credentials.refresh_token:
+            credentials.refresh(Request())
+        else:
+            flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+                client_secrets_file, scopes)
+            credentials = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open('token.pickle', 'wb') as token:
+            pickle.dump(credentials, token)
+
+    client = googleapiclient.discovery.build(
+        api_service_name, api_version, credentials=credentials, developerKey=api_key)
+
+    return client
+
+
+def youtube_data():
+    youtube = build_client()
+
+    playist_id = "PLlVlyGVtvuVkIjURb-twQc1lsE4rT1wfJ"
+
+    videos = youtube.playlistItems().list(
+        part="snippet,contentDetails",
+        maxResults=20,
+        playlistId=playist_id
+    ).execute()['items']
+
+    data = []
+    today = (datetime.today() - timedelta(days=1)).date()
+
+    for v in videos:
+        title = v['snippet']['title']
+        if title == 'Private video':
+            continue
+
+        date = title[title.rfind('|') + 2:]
+        if datetime.strptime(date, '%B %d, %Y').date() != today:
+            continue
+
+        teams = title[:title.find('|') - 1].title().split()
+        team1, team2 = teams[0], teams[2]
+        id_ = v['contentDetails']['videoId']
+        img = v['snippet']['thumbnails']['default']['url']
+
+        # timestamp_ = v['snippet']['publishedAt']
+        # description = v['snippet']['description']
+
+        url = 'https://www.youtube.com/watch?v=' + id_ + '&list=' + playist_id
+        data.append([team1, team2, date, img, url])
+
+    return data
 
 
 def run():
