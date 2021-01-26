@@ -29,11 +29,12 @@ import pandas as pd
 import numpy as np
 import sys
 
-# YouTube API
+# YouTube
 from google.auth.transport.requests import Request
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
+from pytube import YouTube
 import pickle
 import os
 
@@ -82,16 +83,12 @@ def loop_data(rows):
     :return no return value
     """
 
-    global highlights
-
     if rows[0] != '7/21/2020 11:08:49' and rows[1] != "iam9ez@virginia.edu":
         return None, None
 
     leagues = np.array(rows[2].split(","))
     indices_arr = np.array(list(map(lambda x: INDICES[x.strip()], leagues)))
     teams = np.array(list(map(lambda x: rows[x].split(","), indices_arr)))
-
-    highlights = {}
 
     df = pd.DataFrame(columns=['league', 'tm1', 'score1', 'score2', 'tm2', 'gameLink', 'logo1', 'logo2'])
     league_data = list(map(lambda x, y: loop_leagues(x.strip(), y), leagues, teams))
@@ -106,7 +103,7 @@ def loop_data(rows):
 
         df = df.append(temp)
 
-    return df, highlights
+    return df
 
 
 def loop_leagues(league, teams_list):
@@ -121,7 +118,6 @@ def loop_leagues(league, teams_list):
 
     :return None – breaks "loop" if no favorite teams played (condition == False)
     """
-    global highlights
 
     sport_shortened = CODES[league]
     url = "https://www.thescore.com/" + sport_shortened + "/events/" + \
@@ -143,11 +139,9 @@ def loop_leagues(league, teams_list):
         condition = bool(any(lst))
 
     if not condition:
-        highlights[league] = False
         return league
 
     games = list(map(lambda x: loop_games(x, teams_list, league), all_games))
-    highlights[league] = True
     return games
 
 
@@ -193,36 +187,44 @@ def loop_games(game_html, team_list, league):
         return [None, None, None, None, None, None, None, None]
 
 
-def display(data, highlights):
+def display(data):
     """
     :argument data
-    :argument highlights
     """
 
     youtube_df = pd.DataFrame(youtube_data(), columns=['tm1', 'tm2', 'date', 'img', 'link'])
 
     no_highlights = "<center> "
-    for sport, any_ in highlights.items():
-        if not any_:
+    for sport in CODES.keys():
+        games = data.query('league == "' + sport + '"')
+        if len(games.values) == 0:
             no_highlights += '<img src="' + LOGOS[CODES[sport]] + '" width="40"/>                               '
+            continue
         else:
             st.markdown("<h3 style='text-align: center;'> " + sport + "</h1>",
                         unsafe_allow_html=True)
             counter = 0
             col1, col2 = st.beta_columns(2)
 
-            for g in data.query('league == "' + sport + '"').values:
+            for g in games.sort_values(by='score1', ascending=False).values:
                 counter += 1
                 col = col1 if counter % 2 != 0 else col2
-                tm1, score1, score2, tm2, link, logo1, logo2 = g
+                try:
+                    league_, tm1, score1, score2, tm2, link, logo1, logo2 = g
+                except ValueError:
+                    tm1, score1, score2, tm2, link, logo1, logo2 = g
+
                 try:
                     lst = [tm1.split()[1].title(), tm2.split()[1].title()]
                 except IndexError:
                     lst = []
 
+                try:
+                    score1, score2 = str(int(score1)), str(int(score2))
+                except ValueError:
+                    score1, score2 = '', ''
+
                 font_size = '14'
-                if "T:" in score1 or "-" in score2:
-                    score1, score2 = "", ""
                 if len(tm1 + tm2 + score1 + score2) > 30:
                     font_size = '13'
 
@@ -232,8 +234,25 @@ def display(data, highlights):
                              unsafe_allow_html=True)
                 if sport == 'NBA':
                     try:
+                        # ---- OPTION 1 -----
+                        # col.video(list(youtube_df.query('tm1 in @lst')['link'])[0])
+
+                        # ---- OPTION 2 -----
                         link = list(youtube_df.query('tm1 in @lst')['link'])[0]
-                        col.video(link)
+                        col.markdown(
+                            '<iframe width="342" height="257" src="' + link + '" '
+                            'frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; '
+                            'gyroscope; picture-in-picture" allowfullscreen></iframe>',
+                            unsafe_allow_html=True
+                        )
+
+                        # ---- OPTION 3 -----
+                        # link = list(youtube_df.query('tm1 in @lst')['link'])[0]
+                        # YouTube(link).streams.filter(
+                        #     res='720p', file_extension='mp4').first().download(filename='highlight_vid')
+                        # st.video('highlight_vid.mp4')
+                        # os.remove('highlight_vid.mp4')
+
                     except IndexError:
                         continue
 
@@ -275,35 +294,42 @@ def build_client():
 def youtube_data():
     youtube = build_client()
 
+    # TODO Dictionary for Playlists
+    playlists = {
+        'nba': 'PLlVlyGVtvuVkIjURb-twQc1lsE4rT1wfJ',
+        'mlb': 'PLL-lmlkrmJalROhW3PQjrTD6pHX1R0Ub8',
+        'nhl': 'PL1NbHSfosBuHInmjsLcBuqeSV256FqlOO'
+    }
+
     playist_id = "PLlVlyGVtvuVkIjURb-twQc1lsE4rT1wfJ"
 
     videos = youtube.playlistItems().list(
         part="snippet,contentDetails",
-        maxResults=20,
+        maxResults=200,
         playlistId=playist_id
     ).execute()['items']
 
     data = []
-    today = (datetime.today() - timedelta(days=1)).date()
 
     for v in videos:
         title = v['snippet']['title']
         if title == 'Private video':
             continue
 
-        date = title[title.rfind('|') + 2:]
-        if datetime.strptime(date, '%B %d, %Y').date() != today:
+        vid_date = title[title.rfind('|') + 2:]
+        if datetime.strptime(vid_date, '%B %d, %Y').date() != date.date():
+            print(datetime.strptime(vid_date, '%B %d, %Y').date(), date.date())
             continue
 
         teams = title[:title.find('|') - 1].title().split()
         team1, team2 = teams[0], teams[2]
         id_ = v['contentDetails']['videoId']
         img = v['snippet']['thumbnails']['default']['url']
-
         # timestamp_ = v['snippet']['publishedAt']
         # description = v['snippet']['description']
 
-        url = 'https://www.youtube.com/watch?v=' + id_ + '&list=' + playist_id
+        # url = 'https://www.youtube.com/watch?v=' + id_ + '&list=' + playist_id
+        url = 'https://www.youtube.com/embed/' + id_
         data.append([team1, team2, date, img, url])
 
     return data
@@ -322,21 +348,37 @@ def run():
     st.markdown("<center><img src='https://i.postimg.cc/WbYzfHvd/morningscoop.jpg' alt='Image' width='200'></center>",
                 unsafe_allow_html=True)
     st.markdown("<h1 style='text-align: center;'>Morning Scoop</h1>", unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align: center;'> Highlights from: " +
-                date.date().strftime('%B %d, %Y') + "</h1>", unsafe_allow_html=True)
+    date_container = st.beta_container()
 
-    col1, col2 = st.beta_columns(2)
-    custom = col1.checkbox('Enter Custom Date')
-    if custom:
-        input_ = col2.date_input("Enter Date:",
-                                 min_value=datetime.today() - timedelta(days=365),
-                                 max_value=datetime.today() - timedelta(days=1))
-        date = datetime.combine(input_, datetime.min.time())
+    with st.beta_expander('Advanced Settings'):
+        settings1, settings2 = st.beta_columns(2)
+        input_ = settings1.date_input("Enter Date:",
+                                      min_value=datetime.today() - timedelta(days=365),
+                                      max_value=datetime.today() - timedelta(days=1))
+        if input_ != datetime.today().date():
+            date = datetime.combine(input_, datetime.min.time())
 
-    d, h = loop_data(RESPONSE.values[0])
+    date_container.markdown("<h3 style='text-align: center;'> Highlights from: " +
+                            date.date().strftime('%B %d, %Y') + "</h1>", unsafe_allow_html=True)
+
+    # col1, col2 = st.beta_columns(2)
+    # custom = col1.checkbox('Enter Custom Date')
+    # if custom:
+    #     input_ = col2.date_input("Enter Date:",
+    #                              min_value=datetime.today() - timedelta(days=365),
+    #                              max_value=datetime.today() - timedelta(days=1))
+    #     date = datetime.combine(input_, datetime.min.time())
+    #     # TODO Date Container
+
+    if not os.path.exists('sportsHighlights/data_src/highlights_' + str(date.date()) + '.csv'):
+        d = loop_data(RESPONSE.values[0]).dropna().set_index('league')
+        d.to_csv('sportsHighlights/data_src/highlights_' + str(date.date()) + '.csv')
+        # h = pd.DataFrame.from_dict(h, orient='index', columns=['league', 'any'])
+    else:
+        d = pd.read_csv('sportsHighlights/data_src/highlights_' + str(date.date()) + '.csv')
 
     if d is not None:
-        display(d.dropna().set_index('league'), h)
+        display(d)
     else:
         print('Data passed incorrectly')
         exit(code=0)

@@ -73,7 +73,7 @@ def get_schedule():
         'league', 'team1', 'line1', 'line2', 'team2', 'time', 'link', 'logo1', 'logo2'
     ])
 
-    df.to_csv('sportsHighlights/schedule_' + str(date.date()) + '.csv')
+    df.to_csv('sportsHighlights/data_src/schedule_' + str(date.date()) + '.csv')
 
 
 def reformat(s):
@@ -118,7 +118,7 @@ def get_teams():
             data += all_teams
 
     df = pd.DataFrame(data, columns=['league', 'team', 'id', 'link', 'logo'])
-    df.to_csv('sportsHighlights/teams.csv')
+    df.to_csv('sportsHighlights/data_src/teams.csv')
 
 
 def display(games):
@@ -160,19 +160,19 @@ def run():
     league = st.selectbox('Choose the League', ['--- Select a League ---'] + list(CODES.keys()),
                           index=0)
 
-    if not os.path.exists('sportsHighlights/schedule_' + str(date.date()) + '.csv'):
+    if not os.path.exists('sportsHighlights/data_src/schedule_' + str(date.date()) + '.csv'):
         st.warning("Gathering Data for Today's Games...")
         get_schedule()
-    schedule_df = pd.read_csv('sportsHighlights/schedule_' + str(date.date()) + '.csv')
+    schedule_df = pd.read_csv('sportsHighlights/data_src/schedule_' + str(date.date()) + '.csv')
 
-    files = os.listdir(os.getcwd() + '/sportsHighlights/')
+    files = os.listdir(os.getcwd() + '/sportsHighlights/data_src/')
     for f in files:
         if f.endswith('.csv') and f.startswith('schedule') and str(date.date()) not in f:
-            os.remove('sportsHighlights/' + f)
+            os.remove('sportsHighlights/data_src/' + f)
 
-    if not os.path.exists('sportsHighlights/teams.csv'):
+    if not os.path.exists('sportsHighlights/data_src/teams.csv'):
         get_teams()
-    teams_df = pd.read_csv('sportsHighlights/teams.csv')
+    teams_df = pd.read_csv('sportsHighlights/data_src/teams.csv')
 
     if league != '--- Select a League ---':
         st.markdown("<h3 style='text-align: center;'>Schedule for the " + league + "</h3>", unsafe_allow_html=True)
