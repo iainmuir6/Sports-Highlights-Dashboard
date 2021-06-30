@@ -232,7 +232,7 @@ def display(data):
                              "' height='40' /> <b>" + tm1 + "</b> " + score1 + " <a href='" + link + "'> -</a> "
                              + score2 + " <b>" + tm2 + "</b> <img src='" + logo2 + "' height='40' /> </p>",
                              unsafe_allow_html=True)
-                if sport == 'NBA':
+                if sport == 'NBA' or sport == 'NHL':
                     try:
                         # ---- OPTION 1 -----
                         # col.video(list(youtube_df.query('tm1 in @lst')['link'])[0])
@@ -297,40 +297,49 @@ def youtube_data():
     # TODO Dictionary for Playlists
     playlists = {
         'nba': 'PLlVlyGVtvuVkIjURb-twQc1lsE4rT1wfJ',
-        'mlb': 'PLL-lmlkrmJalROhW3PQjrTD6pHX1R0Ub8',
+        # 'mlb': 'PLL-lmlkrmJalROhW3PQjrTD6pHX1R0Ub8',
         'nhl': 'PL1NbHSfosBuHInmjsLcBuqeSV256FqlOO'
     }
 
-    playist_id = "PLlVlyGVtvuVkIjURb-twQc1lsE4rT1wfJ"
-
-    videos = youtube.playlistItems().list(
-        part="snippet,contentDetails",
-        maxResults=200,
-        playlistId=playist_id
-    ).execute()['items']
-
+    # playlist_id = "PLlVlyGVtvuVkIjURb-twQc1lsE4rT1wfJ"
     data = []
 
-    for v in videos:
-        title = v['snippet']['title']
-        if title == 'Private video':
-            continue
+    for sport, playlist_id in playlists.items():
+        videos = youtube.playlistItems().list(
+            part="snippet,contentDetails",
+            maxResults=200,
+            playlistId=playlist_id
+        ).execute()['items']
 
-        vid_date = title[title.rfind('|') + 2:]
-        if datetime.strptime(vid_date, '%B %d, %Y').date() != date.date():
-            print(datetime.strptime(vid_date, '%B %d, %Y').date(), date.date())
-            continue
+        for v in videos:
+            title = v['snippet']['title']
+            if title == 'Private video':
+                continue
 
-        teams = title[:title.find('|') - 1].title().split()
-        team1, team2 = teams[0], teams[2]
-        id_ = v['contentDetails']['videoId']
-        img = v['snippet']['thumbnails']['default']['url']
-        # timestamp_ = v['snippet']['publishedAt']
-        # description = v['snippet']['description']
+            index = {
+                'nba': (title.rfind('|') + 2, -1),
+                'nhl': (title.find('/') - 2, title.rfind('|'))
+            }.get(sport, 'None')
+            date_format = {
+                'nba': '%B %d, %Y',
+                'nhl': '%m/%d/%y'
+            }.get(sport, 'None')
 
-        # url = 'https://www.youtube.com/watch?v=' + id_ + '&list=' + playist_id
-        url = 'https://www.youtube.com/embed/' + id_
-        data.append([team1, team2, date, img, url])
+            vid_date = title[index[0]:index[1]].strip() + (title[-1] if sport == 'nba' else '')
+            if datetime.strptime(vid_date, date_format).date() != date.date():
+                # print(datetime.strptime(vid_date, date_format).date(), date.date())
+                continue
+
+            teams = title[:title.find('|') - 1].title().split()
+            team1, team2 = teams[0], teams[2]
+            id_ = v['contentDetails']['videoId']
+            img = v['snippet']['thumbnails']['default']['url']
+            # timestamp_ = v['snippet']['publishedAt']
+            # description = v['snippet']['description']
+
+            # url = 'https://www.youtube.com/watch?v=' + id_ + '&list=' + playlist_id
+            url = 'https://www.youtube.com/embed/' + id_
+            data.append([team1, team2, date, img, url])
 
     return data
 
