@@ -169,7 +169,11 @@ def loop_games(game_html, team_list, league):
         team_logos = game_html.find_all("div", class_="EventCard__teamLogo--3D7cf")
         logo1, logo2 = team_logos[0].span.img["src"], team_logos[1].span.img["src"]
         score1, score2 = scores[0].text, scores[1].text
-        link = "https://www.thescore.com" + game_html.span.span.a["href"]
+
+        try:
+            link = "https://www.thescore.com" + game_html.span.span.a["href"]
+        except TypeError:
+            link = "https://www.thescore.com" + game_html.span.a["href"]
 
         if tm1 == "Juventus":
             logo1 = "https://upload.wikimedia.org/wikipedia/en/8/84/Juventus_IF_logo.svg"
@@ -193,6 +197,7 @@ def display(data):
     """
 
     youtube_df = pd.DataFrame(youtube_data(), columns=['tm1', 'tm2', 'date', 'img', 'link'])
+    print(youtube_df)
 
     no_highlights = "<center> "
     for sport in CODES.keys():

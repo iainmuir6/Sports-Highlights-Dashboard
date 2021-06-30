@@ -38,6 +38,11 @@ def loop_games(game, l):
     team_logos = game.find_all("div", class_="EventCard__teamLogo--3D7cf")
     logo1, logo2 = team_logos[0].span.img["src"], team_logos[1].span.img["src"]
 
+    try:
+        link = "https://www.thescore.com" + game.span.span.a["href"]
+    except TypeError:
+        link = "https://www.thescore.com" + game.span.a["href"]
+
     return [
         l,
         "WSH Football" if tm1 == "WSH Football Team" else tm1,
@@ -45,7 +50,7 @@ def loop_games(game, l):
         lines[1].text,
         "WSH Football" if tm2 == "WSH Football Team" else tm2,
         game.find('div', class_='EventCard__clockColumn--3lEPz').text,
-        "https://www.thescore.com" + game.span.span.a["href"],
+        link,
         "https://upload.wikimedia.org/wikipedia/en/8/84/Juventus_IF_logo.svg" if tm1 == "Juventus" else logo1,
         "https://upload.wikimedia.org/wikipedia/en/8/84/Juventus_IF_logo.svg" if tm2 == "Juventus" else logo2
     ]
