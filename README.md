@@ -14,10 +14,10 @@ $ pip install streamlit
 ```
 The structure of the app is as follows:
 
-Navigation Bar
-  |—— Home
-  |—— Highlights
-  |—— Schedule
-  |—— Analytics
+Navigation Bar  
+  |—— Home  
+  |—— Highlights  
+  |—— Schedule  
+  |—— Analytics  
   
 Parts of the program are not complete, for example the analytics page of the app.
