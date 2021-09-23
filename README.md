@@ -1,4 +1,4 @@
-<img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Logo_of_YouTube_%282015-2017%29.svg" width="250"><img src="https://streamlit.io/images/brand/streamlit-logo-primary-colormark-darktext.png" width="200"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Google_Forms_2020_Logo.svg" width="250">
+<img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Logo_of_YouTube_%282015-2017%29.svg" width="250"><img src="https://streamlit.io/images/brand/streamlit-logo-primary-colormark-darktext.png" width="250"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Google_Forms_2020_Logo.svg" width="100">
 
 
 # Sports Highlights Dashboard
