@@ -15,4 +15,7 @@ shotChartProject/**
 # Data
 *.csv
 
+# Random files / secrets
 client_secrets.json
+token.pickle
+example.py
